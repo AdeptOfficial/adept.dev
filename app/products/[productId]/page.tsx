@@ -1,5 +1,5 @@
 export default function ProductDetails( { params }: {
-    params: { productId: String } // param is object with key with type String
+    params: { productId: string } // param is object with key with type String
 } ) {
     return (
         <div className='container'>
