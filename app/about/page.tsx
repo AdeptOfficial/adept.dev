@@ -1,5 +1,10 @@
 import Link from 'next/link'
+import { title } from 'process'
 import React from 'react'
+
+export const metadata = {
+  title: "About AdepT.dev"
+}
 
 export default function About() {
   return (
