@@ -2,14 +2,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const discordToken = process.env.DISCORD_TOKEN; // Example of using a server-side env variable
-
+  const discordToken = process.env.DISCORD_BOT_TOKEN; // Example of using a server-side env variable
+  const discord_user_id = process.env.DISCORD_USER_ID;
   if (!discordToken) {
     return res.status(500).json({ error: 'Server-side environment variable not set' });
   }
 
   try {
-    const response = await fetch('https://discord.com/api/users/@me', {
+    const response = await fetch(`https://discord.com/api/v10/users/${discord_user_id}`, {
       headers: {
         Authorization: `Bot ${discordToken}`,
       },

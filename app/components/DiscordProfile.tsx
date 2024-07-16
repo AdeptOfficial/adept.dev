@@ -27,13 +27,13 @@ const DiscordProfile: React.FC = () => {
   }, []);
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className='text-white'>Error: {error}</div>;
   }
 
   return (
     <div>
       {profilePicUrl ? (
-        <Image src={profilePicUrl} alt="Discord Profile" width={100} height={100} />
+        <Image src={profilePicUrl} alt="Discord Profile" width={500} height={500} />
       ) : (
         <p className='text-white'>Loading profile picture...</p>
       )}
