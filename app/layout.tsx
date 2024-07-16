@@ -5,7 +5,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Learn Next Js",
+  title: {
+    absolute: "",
+    default: "Learning Nextjs - AdeptProductions",
+    template: "%s - AdeptProductions"
+  },
   description: "Locked In",
 };
 
