@@ -29,11 +29,20 @@ const DiscordProfile: React.FC = () => {
   if (error) {
     return <div className='text-white'>Error: {error}</div>;
   }
-
+  // w-full sm:w-auto sm:mx-auto md:w-[500px] md:h-[500px] h-[500px] lg:w-[500px] lg:h-[400px]
   return (
-    <div>
+    <div className="col-span-5">
       {profilePicUrl ? (
-        <Image src={profilePicUrl} alt="Discord Profile" width={500} height={500} />
+        <div className="relative rounded-full w-[500px] h-[500px] overflow-hidden bg-[#181818] sm:w-auto sm:mx-auto mt-5 md:w-[500px] md:h-[500px] h-[500px] lg:w-[700px] lg:h-[700px] lg:-translate-x-1/4">
+          <Image src={profilePicUrl}
+            alt="Discord Profile"
+            className='absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2'
+            width={1024}
+            height={1024}
+            //layout="fill" 
+            //objectFit="cover"
+          />
+        </div>
       ) : (
         <p className='text-white'>Loading profile picture...</p>
       )}
