@@ -33,14 +33,13 @@ const DiscordProfile: React.FC = () => {
   return (
     <div className="col-span-5">
       {profilePicUrl ? (
-        <div className="relative rounded-full w-[500px] h-[500px] overflow-hidden bg-[#181818] sm:w-auto sm:mx-auto mt-5 md:w-[500px] md:h-[500px] h-[500px] lg:w-[700px] lg:h-[700px] lg:-translate-x-1/4">
-          <Image src={profilePicUrl}
+        <div className="relative rounded-full overflow-hidden bg-[#181818] mt-5 mx-auto w-[200px] h-[200px] sm:w-[300px] sm:h-[300px] md:w-[400px] md:h-[400px] lg:w-[500px] lg:h-[500px] xl:w-[700px] xl:h-[700px]">
+          <Image 
+            src={profilePicUrl}
             alt="Discord Profile"
-            className='absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2'
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
             width={1024}
             height={1024}
-            //layout="fill" 
-            //objectFit="cover"
           />
         </div>
       ) : (

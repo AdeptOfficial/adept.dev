@@ -10,6 +10,18 @@ const HeroSection = () => {
           </p>
         </div>
         <DiscordProfile />
+
+
+
+        <div className='col-span-5 flex flex-col items-center justify-center'></div>
+        <div className='col-span-12 mt-8'>
+          <details className="bg-gray-800 rounded-lg p-4">
+            <summary className='text-white text-xl cursor-pointer'>Learn more about me</summary>
+            <p className='text-[#ADB7BE] mt-4'>
+              I specialize in building scalable web applications and have a passion for learning new technologies.
+            </p>
+          </details>
+        </div>
       </div>
     </section>
   )
