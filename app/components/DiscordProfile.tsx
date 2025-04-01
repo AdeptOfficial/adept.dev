@@ -38,6 +38,7 @@ const DiscordProfile: React.FC = () => {
             alt="Discord Profile"
             className="object-cover"
             fill
+            sizes="(max-width: 640px) 100vw, 50vw"
           />
         </div>
       ) : (

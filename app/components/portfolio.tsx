@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import ProjectsSection from './ProjectsSection';
 
 interface Language {
     name: string;
@@ -14,7 +15,7 @@ interface Repo {
     homepageUrl: string | null;
     primaryLanguage: { name: string } | null;
     languages: { nodes: Language[] };
-    pages?: { url: string }; // Optional fallback
+    isActiveDevelopment: boolean;
 }
 
 const Portfolio: React.FC = () => {
@@ -30,7 +31,28 @@ const Portfolio: React.FC = () => {
                     throw new Error(`Failed to fetch repositories: ${response.status}`);
                 }
                 const data = await response.json();
-                setRepos(data);
+
+                // remove unwanted repositories
+                const filteredRepos = data.filter((repo: Repo) => {
+                    const unwantedNames = ['AdeptOfficial', 'HomeControl'];
+                    return !unwantedNames.includes(repo.name);
+                });
+
+                // Add active development status manually
+                const reposWithStatus = filteredRepos.map((repo: Repo) => ({
+                    ...repo,
+                    isActiveDevelopment: ['adept.dev', 'DevHub', 'Syna'].includes(repo.name),
+                }));
+
+                // Sort by active development status first, then by name
+                const sortedRepos = [...reposWithStatus].sort((a: Repo, b: Repo) => {
+                    if (a.isActiveDevelopment === b.isActiveDevelopment) {
+                        return a.name.localeCompare(b.name);
+                    }
+                    return a.isActiveDevelopment ? -1 : 1;
+                });
+
+                setRepos(sortedRepos);
             } catch (err: any) {
                 setError(err.message);
             } finally {
@@ -41,9 +63,9 @@ const Portfolio: React.FC = () => {
         fetchRepos();
     }, []);
 
-    const filteredAndSortedRepos = repos
-        .filter((repo) => !['AdeptOfficial', 'HomeControl'].includes(repo.name))
-        .sort((a, b) => a.name.localeCompare(b.name));
+    // Separate repositories into active and paused development
+    const activeRepos = repos.filter((repo) => repo.isActiveDevelopment);
+    const pausedRepos = repos.filter((repo) => !repo.isActiveDevelopment);
 
     return (
         <div className="flex flex-col h-full w-full p-4 gap-6">
@@ -51,77 +73,29 @@ const Portfolio: React.FC = () => {
             <div className="w-full bg-gray-800 rounded-lg p-6 shadow-md">
                 <details>
                     <summary className="text-white text-2xl cursor-pointer">
-                        Learn more about me
+                    Introduction
                     </summary>
                     <p className="text-gray-400 mt-4">
-                        I specialize in building scalable web applications and have a passion for learning new technologies.
+                    Hey, I&#39;m AdepT — 
+                    A motivated computer science student driven by the belief
+                    that there's always a challenge greater than the one you're currently facing,
+                    so why be afraid now?
                     </p>
                 </details>
             </div>
 
             {/* Projects Section */}
             <div className="w-full bg-gray-800 rounded-lg p-6 shadow-md">
-                <details open>
-                    <summary className="text-white text-2xl cursor-pointer">
-                        Projects
-                    </summary>
-                    <div className="mt-4">
-                        {loading && <p className="text-gray-400">Loading...</p>}
-                        {error && <p className="text-red-500">Error: {error}</p>}
-                        {!loading && !error && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredAndSortedRepos.map((repo) => {
-                                    const githubPagesUrl = repo.homepageUrl || repo.pages?.url || null;
+                <h2 className="text-white text-2xl mb-4">My Projects</h2>
 
-                                    return (
-                                        <div
-                                            key={repo.id}
-                                            className="bg-gray-700 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow"
-                                        >
-                                            <a
-                                                href={repo.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="block text-white"
-                                            >
-                                                <h3 className="text-lg font-bold mb-2">{repo.name}</h3>
-                                                <p className="text-gray-400 text-sm mb-2">
-                                                    {repo.description || 'No description available.'}
-                                                </p>
-                                                <p className="text-gray-500 text-xs mb-2">
-                                                    Primary Language: {repo.primaryLanguage?.name || 'None'}
-                                                </p>
-                                                <p className="text-gray-500 text-xs mb-2">
-                                                    Other Languages: {repo.languages.nodes.length > 0
-                                                        ? repo.languages.nodes.map((lang) => lang.name).join(', ')
-                                                        : 'None'}
-                                                </p>
+                {/* Active Projects */}
+                <ProjectsSection repos={activeRepos} loading={loading} error={error} />
 
-                                                {githubPagesUrl && (
-                                                    <p className="text-gray-400 text-sm mt-2">
-                                                        🌐 GitHub Pages:{' '}
-                                                        <a
-                                                            href={githubPagesUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-blue-400 hover:underline break-all"
-                                                        >
-                                                            {githubPagesUrl}
-                                                        </a>
-                                                    </p>
-                                                )}
-                                            </a>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </details>
+                {/* Inactive Projects */}
+                <ProjectsSection repos={pausedRepos} loading={loading} error={error} />
             </div>
         </div>
     );
 };
 
 export default Portfolio;
-    
