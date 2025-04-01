@@ -1,9 +1,10 @@
 // pages/api/discordProfilePicture.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const discordProfilePictureHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   const discordToken = process.env.DISCORD_BOT_TOKEN;
   const discord_user_id = process.env.DISCORD_USER_ID;
+
   if (!discordToken) {
     return res.status(500).json({ error: 'Server-side environment variable not set' });
   }
@@ -20,10 +21,16 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const data = await response.json();
-    //console.log('API Response Data:', data); // Log the API response for debugging
-    const profilePicUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}?size=2048`
+    const profilePicUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}?size=2048`;
     res.status(200).json({ profilePicUrl });
-  } catch (error) {
-    res.status(500).json({ error: error });
+  } catch (error: unknown) {
+    // Narrow the error type
+    if (error instanceof Error) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'An unknown error occurred' });
+    }
   }
 };
+
+export default discordProfilePictureHandler;

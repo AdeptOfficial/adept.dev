@@ -1,5 +1,5 @@
 import DiscordProfile from "./DiscordProfile";
-import Portfolio from "./Portfolio";
+import Portfolio from "./___temp";
 
 const HeroSection = () => {
   return (

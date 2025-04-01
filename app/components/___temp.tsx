@@ -76,10 +76,10 @@ const Portfolio: React.FC = () => {
                     Introduction
                     </summary>
                     <p className="text-gray-400 mt-4">
-                    Hey, I&#39;m AdepT — 
-                    A motivated computer science student driven by the belief
-                    that there's always a challenge greater than the one you're currently facing,
-                    so why be afraid now?
+                        Hey, I&apos;m AdepT — 
+                        A motivated computer science student driven by the belief
+                        that there&apos;s always a challenge greater than the one you&apos;re currently facing,
+                        so why be afraid now?
                     </p>
                 </details>
             </div>
