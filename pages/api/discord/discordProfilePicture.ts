@@ -20,7 +20,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const data = await response.json();
-    console.log('API Response Data:', data); // Log the API response for debugging
+    //console.log('API Response Data:', data); // Log the API response for debugging
     const profilePicUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}?size=2048`
     res.status(200).json({ profilePicUrl });
   } catch (error) {

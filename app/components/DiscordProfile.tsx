@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 const DiscordProfile: React.FC = () => {
-  const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
+    const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -15,7 +15,6 @@ const DiscordProfile: React.FC = () => {
           throw new Error('Failed to fetch profile picture');
         }
         const data = await res.json();
-        console.log('Fetched data:', data);
         setProfilePicUrl(data.profilePicUrl);
       } catch (error: any) {
         console.error('Error fetching profile picture:', error);
@@ -27,23 +26,22 @@ const DiscordProfile: React.FC = () => {
   }, []);
 
   if (error) {
-    return <div className='text-white'>Error: {error}</div>;
+    return <div className="text-white">Error: {error}</div>;
   }
-  // w-full sm:w-auto sm:mx-auto md:w-[500px] md:h-[500px] h-[500px] lg:w-[500px] lg:h-[400px]
+
   return (
-    <div className="col-span-5">
+    <div className="flex justify-center items-center">
       {profilePicUrl ? (
-        <div className="relative rounded-full overflow-hidden bg-[#181818] mt-5 mx-auto w-[200px] h-[200px] sm:w-[300px] sm:h-[300px] md:w-[400px] md:h-[400px] lg:w-[500px] lg:h-[500px] xl:w-[700px] xl:h-[700px]">
-          <Image 
+        <div className="relative rounded-full overflow-hidden bg-[#181818] w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 shadow-lg">
+          <Image
             src={profilePicUrl}
             alt="Discord Profile"
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
-            width={1024}
-            height={1024}
+            className="object-cover"
+            fill
           />
         </div>
       ) : (
-        <p className='text-white'>Loading profile picture...</p>
+        <p className="text-white">Loading profile picture...</p>
       )}
     </div>
   );
