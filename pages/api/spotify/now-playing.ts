@@ -9,8 +9,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cached = cache.get('now-playing');
     if (cached) return res.status(200).json(cached);
 
-    const baseURL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const tokenRes = await fetch(`${baseURL}/api/spotify/access-token`);
+    // 🔁 Dynamically build baseURL from request
+    const protocol = req.headers.host?.startsWith('localhost') ? 'http' : 'https';
+    const baseURL = `${protocol}://${req.headers.host}`;
+    const tokenUrl = `${baseURL}/api/spotify/access-token`;
+
+    console.log(`[NOW PLAYING] Fetching access token from: ${tokenUrl}`);
+
+    const tokenRes = await fetch(tokenUrl);
 
     // 🔐 Catch and log HTML error pages
     const raw = await tokenRes.text();
@@ -32,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Missing access token' });
     }
 
+    // 🎧 Request currently playing track from Spotify
     const spotifyRes = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
       headers: {
         Authorization: `Bearer ${access_token}`,
@@ -39,11 +46,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (spotifyRes.status === 204 || !spotifyRes.data || !spotifyRes.data.item) {
-      return res.status(204).end(); // No content
+      return res.status(204).end(); // Nothing is playing
     }
 
-    cache.set('now-playing', spotifyRes.data);
-    return res.status(200).json(spotifyRes.data);
+    const nowPlaying = spotifyRes.data;
+    cache.set('now-playing', nowPlaying);
+
+    return res.status(200).json(nowPlaying);
   } catch (error: any) {
     const errMsg = error.response?.data || error.message;
     console.error('🎧 Now Playing error:', errMsg);
