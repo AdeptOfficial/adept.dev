@@ -3,7 +3,7 @@ import axios from 'axios';
 import NodeCache from 'node-cache';
 import { getAccessToken } from '@/lib/spotify';
 
-const cache = new NodeCache({ stdTTL: 10 }); // Cache for 10 seconds
+const cache = new NodeCache({ stdTTL: 10 }); // Cache valid responses for 10s
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const access_token = await getAccessToken();
 
     if (!access_token) {
-      console.warn('⚠️ Access token is missing after getAccessToken');
+      console.warn('⚠️ No access token from getAccessToken');
       return res.status(401).json({ error: 'Missing access token' });
     }
 
@@ -45,10 +45,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (spotifyRes.status === 204 || !spotifyRes.data || !spotifyRes.data.item) {
-      return res.status(204).end(); // Nothing is playing
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⏸ Nothing is currently playing');
+      }
+      return res.status(204).end(); // No caching of empty results
     }
 
     const nowPlaying = spotifyRes.data;
+
+    // ✅ Cache only when valid track is playing
     cache.set('now-playing', nowPlaying);
 
     if (process.env.NODE_ENV === 'development') {
