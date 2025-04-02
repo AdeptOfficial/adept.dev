@@ -14,10 +14,16 @@ const SpotifyAuth = () => {
 
       const redirectUri = `${baseUrl}/api/spotify/callback`;
 
+      // 🔐 Create and store a CSRF-safe state token
+      const state = crypto.randomUUID();
+      document.cookie = `spotify_auth_state=${state}; max-age=300; path=/; SameSite=Lax`;
+
+      // 🎧 Build the Spotify Auth URL
       const url = new URL('https://accounts.spotify.com/authorize');
       url.searchParams.set('client_id', process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!);
       url.searchParams.set('response_type', 'code');
       url.searchParams.set('redirect_uri', redirectUri);
+      url.searchParams.set('state', state);
       url.searchParams.set(
         'scope',
         [
@@ -41,12 +47,12 @@ const SpotifyAuth = () => {
       {authUrl ? (
         <a
           href={authUrl}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
         >
           Connect Spotify
         </a>
       ) : (
-        <p>Loading...</p>
+        <p className="text-gray-400">Loading auth...</p>
       )}
     </div>
   );
