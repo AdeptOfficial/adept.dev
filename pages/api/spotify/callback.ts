@@ -4,59 +4,80 @@ import axios from 'axios';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const code = req.query.code as string;
 
-  // Check if the authorization code is present
   if (!code) {
+    console.warn('Missing authorization code:', req.query);
     return res.status(400).json({ error: 'Missing authorization code' });
   }
 
   try {
-    // Dynamically build the redirect URI
-    const baseURL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'; // Fallback to localhost if not set
+    const baseURL = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') || 'http://localhost:3000';
     const redirectURI = `${baseURL}/api/spotify/callback`;
 
-    // Set up the request to Spotify's token exchange endpoint
-    const authOptions = {
-      method: 'POST',
-      url: 'https://accounts.spotify.com/api/token',
-      headers: {
-        Authorization:
-          'Basic ' +
-          Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      data: new URLSearchParams({
+    const authHeader = Buffer.from(
+      `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+    ).toString('base64');
+
+    const tokenRes = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      new URLSearchParams({
         grant_type: 'authorization_code',
         code,
-        redirect_uri: redirectURI, // Ensure it matches the redirect URI registered on Spotify
+        redirect_uri: redirectURI,
       }),
-    };
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${authHeader}`,
+        },
+      }
+    );
 
-    // Request the access token from Spotify
-    const response = await axios(authOptions);
+    const { access_token, refresh_token } = tokenRes.data;
 
-    // Extract refresh_token and access_token from response
-    const { refresh_token, access_token } = response.data;
-
-    // Log the refresh token (for debugging purposes)
-    console.log('🎉 REFRESH TOKEN:', refresh_token);
-
-    // Return the refresh token to the client
-    return res.status(200).json({
-      message: 'Successfully obtained refresh token',
-      refresh_token,
-      access_token,
+    // 🔍 Fetch the user's Spotify profile
+    const profileRes = await axios.get('https://api.spotify.com/v1/me', {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
     });
-  } catch (error: any) {
-    console.error('Spotify token exchange error:', error.response?.data || error.message);
 
-    // Handle specific error scenarios
-    if (error.response?.status === 400) {
-      return res.status(400).json({ error: 'Invalid authorization code or redirect URI' });
+    const profile = profileRes.data;
+
+    // ✅ Restrict access
+    const ALLOWED_SPOTIFY_ID = process.env.ALLOWED_SPOTIFY_ID;
+    const ALLOWED_EMAIL = process.env.ALLOWED_EMAIL;
+    const isDev = process.env.VERCEL_ENV === 'development';
+    const isPreview = process.env.VERCEL_ENV === 'preview';
+
+    // 🚫 Restrict preview/production access to owner only
+    const isOwner = profile.id === ALLOWED_SPOTIFY_ID || profile.email === ALLOWED_EMAIL;
+
+    if (!isDev && !isOwner) {
+      console.warn('❌ Unauthorized attempt from:', profile.id, profile.email);
+      return res.status(403).json({ error: 'Access denied: preview/production use is restricted.' });
     }
 
-    // General error handler
-    return res.status(500).json({
-      error: 'Token exchange failed',
+    console.log('✅ Authorized Spotify user:', profile.display_name || profile.id);
+
+    return res.status(200).json({
+      message: 'Successfully authenticated and verified',
+      access_token,
+      refresh_token,
+      user: {
+        id: profile.id,
+        email: profile.email,
+        display_name: profile.display_name,
+      },
+    });
+  } catch (error: any) {
+    console.error('Spotify callback error:', error.response?.data || error.message);
+
+    const status = error.response?.status || 500;
+
+    return res.status(status).json({
+      error: status === 400
+        ? 'Invalid authorization code or redirect URI'
+        : 'Token exchange or user validation failed',
       details: error.response?.data || error.message,
     });
   }
