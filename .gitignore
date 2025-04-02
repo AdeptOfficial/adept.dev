@@ -37,3 +37,4 @@ next-env.d.ts
 
 # spotify
 /pages/api/spotify/access_token.ts
+/pages/spotify-auth.tsx
