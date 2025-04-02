@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import TrackIdle from './TrackIdle'
 import TrackPaused from './TrackPaused'
@@ -29,7 +29,7 @@ export default function NowPlaying() {
   const pausedSince = useRef<number | null>(null)
   const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchTrack = async () => {
+  const fetchTrack = useCallback(async () => {
     try {
       const res = await fetch('/api/spotify/now-playing')
 
@@ -54,7 +54,7 @@ export default function NowPlaying() {
           setStartTime(Date.now() - data.progress_ms)
         }
 
-        // Handle paused track timeout
+        // Handle paused track logic
         if (data.is_playing === false) {
           if (pausedSince.current === null) {
             pausedSince.current = Date.now()
@@ -64,23 +64,16 @@ export default function NowPlaying() {
             pauseTimeoutRef.current = setTimeout(() => {
               setTrack(null)
               pausedSince.current = null
-                pauseTimeoutRef.current = null
-              }, 30_000) // 30 seconds
+              pauseTimeoutRef.current = null
+            }, 30_000) // 30 seconds
           }
         } else {
-          // Reset paused timer if resumed playing
+          // Clear pause logic if resumed
           pausedSince.current = null
           if (pauseTimeoutRef.current) {
             clearTimeout(pauseTimeoutRef.current)
             pauseTimeoutRef.current = null
           }
-        }
-
-        if (data.is_playing && !intervalRef.current) {
-          intervalRef.current = setInterval(fetchTrack, 7000)
-        } else if (!data.is_playing && intervalRef.current) {
-          clearInterval(intervalRef.current)
-          intervalRef.current = null
         }
       }
     } catch (err) {
@@ -88,21 +81,23 @@ export default function NowPlaying() {
       setHasError(true)
       setTrack(null)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchTrack()
     intervalRef.current = setInterval(fetchTrack, 7000)
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
     }
-  }, [])
+  }, [fetchTrack])
 
   useEffect(() => {
     if (!track || !track.item || !track.is_playing || startTime === null) return
 
     let animationFrame: number
+
     const tick = () => {
       const now = Date.now()
       const elapsed = now - startTime
@@ -112,6 +107,7 @@ export default function NowPlaying() {
     }
 
     tick()
+
     return () => cancelAnimationFrame(animationFrame)
   }, [track, startTime])
 
