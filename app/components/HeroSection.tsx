@@ -1,5 +1,6 @@
 import DiscordProfile from "./DiscordProfile";
 import Portfolio from "./Portfolio";
+import NowPlaying from "./spotify-components/NowPlaying";
 
 const HeroSection = () => {
   return (
@@ -16,9 +17,13 @@ const HeroSection = () => {
           </p>
         </div>
 
-        {/* Right Section: Profile Picture */}
-        <div className="col-span-1 lg:col-span-5 flex justify-center items-center">
+        {/* Right Section: Profile Picture and Now Playing */}
+        <div className="col-span-1 lg:col-span-5 flex flex-col justify-center items-center space-y-6">
           <DiscordProfile />
+          {/* Now Playing Section */}
+          <div className="w-full max-w-xs">
+            <NowPlaying />
+          </div>
         </div>
       </div>
 
