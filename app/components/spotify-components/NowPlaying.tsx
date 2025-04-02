@@ -26,41 +26,45 @@ export default function NowPlaying() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const previousIsPlaying = useRef<boolean | null>(null)
   const [hideIdle, setHideIdle] = useState(false)
+  const [hasError, setHasError] = useState(false)
 
   const fetchTrack = async () => {
     try {
       const res = await fetch('/api/spotify/now-playing')
 
       if (res.status === 204) {
-        // No track playing: Set track to null and reset state
         setTrack(null)
+        setHasError(false)
+        return
+      }
+
+      if (res.status === 500 || res.status === 401) {
+        setTrack(null)
+        setHasError(true)
         return
       }
 
       if (res.status === 200) {
         const data = await res.json()
         setTrack(data)
+        setHasError(false)
 
         if (data.item) {
           setStartTime(Date.now() - data.progress_ms)
         }
 
-        // Handle state when song is paused
         if (
           previousIsPlaying.current !== null &&
           previousIsPlaying.current === true &&
           data.is_playing === false
         ) {
-          // Song is paused, do not reset
           setTimeout(() => {
-            // Trigger fade in for paused state
             setHideIdle(false)
           }, 1000)
         }
 
         previousIsPlaying.current = data.is_playing
 
-        // Stop polling if no song is playing
         if (!data.is_playing && intervalRef.current) {
           clearInterval(intervalRef.current)
           intervalRef.current = null
@@ -72,6 +76,8 @@ export default function NowPlaying() {
       }
     } catch (err) {
       console.error('Failed to fetch track', err)
+      setHasError(true)
+      setTrack(null)
     }
   }
 
@@ -100,7 +106,6 @@ export default function NowPlaying() {
   }, [track, startTime])
 
   useEffect(() => {
-    // Auto-fade idle message
     if (!track || !track.item) {
       setHideIdle(false)
       const timeout = setTimeout(() => setHideIdle(true), 3000)
@@ -112,8 +117,7 @@ export default function NowPlaying() {
 
   return (
     <AnimatePresence mode="wait">
-      {/* Show idle state when no track is playing */}
-      {!track || !track.item ? (
+      {hasError ? null : !track || !track.item ? (
         !hideIdle && <TrackIdle />
       ) : !track.is_playing ? (
         <TrackPaused track={{ ...track, item: track.item }} />
