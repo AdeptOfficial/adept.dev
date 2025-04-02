@@ -34,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const cacheKey = `discord_avatar:${userId}`;
 
   try {
+    // Check rate limit
     if (await isRateLimited(ip)) {
       return res.status(429).json({ error: 'Too many requests. Please try again later.' });
     }
@@ -58,7 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const data = await response.json();
     const profilePicUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}?size=2048`;
 
-    // Cache for 60 seconds
+    // Cache the result in Redis for 60 seconds
     await redis.set(cacheKey, profilePicUrl, { ex: 60 });
 
     return res.status(200).json({ profilePicUrl });
