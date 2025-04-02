@@ -34,6 +34,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const cacheKey = `discord_avatar:${userId}`;
 
   try {
+    // Debug logs
+    console.log('Running on the server:', typeof window === 'undefined');
+
     // Check rate limit
     if (await isRateLimited(ip)) {
       return res.status(429).json({ error: 'Too many requests. Please try again later.' });
