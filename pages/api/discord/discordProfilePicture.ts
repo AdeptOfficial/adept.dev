@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // check local cache first
     const localCache = profilePicCache.get(userId);
     if (localCache) {
-      console.log('Local cache hit:', localCache);
+      console.log('Local cache hit!');
       return res.status(200).json({ profilePicUrl: localCache });
     }
     // Check rate limit
@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check Redis cache
     const cached = await redis.get<string>(cacheKey);
     if (cached) {
-      console.log('redis cache hit:', cached);
+      console.log('redis cache hit!');
       return res.status(200).json({ profilePicUrl: cached });
     }
 
