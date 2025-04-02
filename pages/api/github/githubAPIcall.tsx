@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import githubCache from '@/lib/cache/githubCache';
 
 const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
 const GITHUB_GRAPHQL_TOKEN = process.env.GITHUB_AUTH_TOKEN;
@@ -32,6 +33,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     `;
 
     try {
+        // check local cache first
+        if (githubCache.has('repositories')) {
+            console.log('Cache hit for repositories');
+            const cachedData = githubCache.get('repositories');
+            return res.status(200).json(cachedData);
+        }
+
+
         const graphqlResponse = await fetch(GITHUB_GRAPHQL_URL, {
             method: 'POST',
             headers: {
@@ -49,6 +58,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const repositories = data.user.repositories.nodes;
+
+        // store the fetched data in local cache
+        githubCache.set('repositories', repositories);
+
 
         // Now fetch GitHub Pages info using the REST API
         const withPages = await Promise.all(repositories.map(async (repo: any) => {

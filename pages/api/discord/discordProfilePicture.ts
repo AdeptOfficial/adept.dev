@@ -1,6 +1,7 @@
 // pages/api/discordProfilePicture.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { redis } from '@/lib/redis';
+import profilePicCache from '@/lib/cache/profilePicCache';
 
 const DISCORD_USER_ID = process.env.DISCORD_USER_ID!;
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
@@ -37,6 +38,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Debug logs
     console.log('Running on the server:', typeof window === 'undefined');
 
+    // check local cache first
+    const localCache = profilePicCache.get(userId);
+    if (localCache) {
+      console.log('Local cache hit:', localCache);
+      return res.status(200).json({ profilePicUrl: localCache });
+    }
     // Check rate limit
     if (await isRateLimited(ip)) {
       return res.status(429).json({ error: 'Too many requests. Please try again later.' });
@@ -45,6 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check Redis cache
     const cached = await redis.get<string>(cacheKey);
     if (cached) {
+      console.log('redis cache hit:', cached);
       return res.status(200).json({ profilePicUrl: cached });
     }
 
@@ -60,10 +68,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const data = await response.json();
+
+    await redis.set(cacheKey, data.avatar, { ex: 60 });
+
     const profilePicUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}?size=2048`;
 
     // Cache the result in Redis for 60 seconds
     await redis.set(cacheKey, profilePicUrl, { ex: 60 });
+
+    // Cache the result in local cache
+    profilePicCache.set(userId, profilePicUrl);
 
     return res.status(200).json({ profilePicUrl });
   } catch (error: unknown) {
