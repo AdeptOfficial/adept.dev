@@ -24,9 +24,10 @@ export default function NowPlaying() {
   const [startTime, setStartTime] = useState<number | null>(null)
   const [liveProgress, setLiveProgress] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const previousIsPlaying = useRef<boolean | null>(null)
   const [hideIdle, setHideIdle] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const pausedSince = useRef<number | null>(null)
+  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchTrack = async () => {
     try {
@@ -53,25 +54,33 @@ export default function NowPlaying() {
           setStartTime(Date.now() - data.progress_ms)
         }
 
-        if (
-          previousIsPlaying.current !== null &&
-          previousIsPlaying.current === true &&
-          data.is_playing === false
-        ) {
-          setTimeout(() => {
-            setHideIdle(false)
-          }, 1000)
-        }
+        // Handle paused track timeout
+        if (data.is_playing === false) {
+          if (pausedSince.current === null) {
+            pausedSince.current = Date.now()
+          }
 
-        previousIsPlaying.current = data.is_playing
-
-        if (!data.is_playing && intervalRef.current) {
-          clearInterval(intervalRef.current)
-          intervalRef.current = null
+          if (!pauseTimeoutRef.current) {
+            pauseTimeoutRef.current = setTimeout(() => {
+              setTrack(null)
+              pausedSince.current = null
+                pauseTimeoutRef.current = null
+              }, 30_000) // 30 seconds
+          }
+        } else {
+          // Reset paused timer if resumed playing
+          pausedSince.current = null
+          if (pauseTimeoutRef.current) {
+            clearTimeout(pauseTimeoutRef.current)
+            pauseTimeoutRef.current = null
+          }
         }
 
         if (data.is_playing && !intervalRef.current) {
           intervalRef.current = setInterval(fetchTrack, 7000)
+        } else if (!data.is_playing && intervalRef.current) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
         }
       }
     } catch (err) {
@@ -86,6 +95,7 @@ export default function NowPlaying() {
     intervalRef.current = setInterval(fetchTrack, 7000)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
+      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
     }
   }, [])
 
