@@ -11,6 +11,10 @@ interface ProjectsSectionProps {
         primaryLanguage: { name: string } | null;
         languages: { nodes: { name: string }[] };
         isActiveDevelopment: boolean;
+        pages?: {
+            status: string;
+            url: string;
+        } | null;
     }[];
     loading: boolean;
     error: string | null;

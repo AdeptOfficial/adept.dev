@@ -16,6 +16,10 @@ interface Repo {
     primaryLanguage: { name: string } | null;
     languages: { nodes: Language[] };
     isActiveDevelopment: boolean;
+    pages?: {
+        status: string;
+        url: string;
+      } | null;
 }
 
 const Portfolio: React.FC = () => {

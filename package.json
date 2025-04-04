@@ -14,6 +14,7 @@
     "@upstash/redis": "^1.34.6",
     "adept.dev": "file:",
     "axios": "^1.7.2",
+    "cookie": "^1.0.2",
     "framer-motion": "^12.6.3",
     "glob": "^11.0.1",
     "inflight": "^1.0.6",
@@ -25,6 +26,7 @@
     "rimraf": "^6.0.1"
   },
   "devDependencies": {
+    "@types/cookie": "^0.6.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
