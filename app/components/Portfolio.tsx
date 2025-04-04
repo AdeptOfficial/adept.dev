@@ -16,6 +16,10 @@ interface Repo {
     primaryLanguage: { name: string } | null;
     languages: { nodes: Language[] };
     isActiveDevelopment: boolean;
+    pages?: {
+        status: string;
+        url: string;
+      } | null;
 }
 
 const Portfolio: React.FC = () => {
@@ -31,6 +35,7 @@ const Portfolio: React.FC = () => {
                     throw new Error(`Failed to fetch repositories: ${response.status}`);
                 }
                 const data = await response.json();
+                console.log('Fetched repositories:', data); // Debugging line
 
                 // remove unwanted repositories
                 const filteredRepos = data.filter((repo: Repo) => {

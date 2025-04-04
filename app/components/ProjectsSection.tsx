@@ -11,12 +11,18 @@ interface ProjectsSectionProps {
         primaryLanguage: { name: string } | null;
         languages: { nodes: { name: string }[] };
         isActiveDevelopment: boolean;
+        pages?: {
+            status: string;
+            url: string;
+        } | null;
     }[];
     loading: boolean;
     error: string | null;
 }
 
 const ProjectsSection: React.FC<ProjectsSectionProps> = ({ repos, loading, error }) => {
+
+   // console.log('ProjectsSection - Repositories:', repos); // Debugging line
     return (
         <div className="w-full bg-gray-800 rounded-lg p-6 shadow-md">
             <details>
