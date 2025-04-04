@@ -35,7 +35,6 @@ const Portfolio: React.FC = () => {
                     throw new Error(`Failed to fetch repositories: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log('Fetched repositories:', data); // Debugging line
 
                 // remove unwanted repositories
                 const filteredRepos = data.filter((repo: Repo) => {

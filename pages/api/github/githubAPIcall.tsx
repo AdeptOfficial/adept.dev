@@ -156,8 +156,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     );
 
-    console.log('Fetched repositories:', withPages); // Debugging line
-
     return res.status(200).json(withPages);
   } catch (error: unknown) {
     const errorMessage =

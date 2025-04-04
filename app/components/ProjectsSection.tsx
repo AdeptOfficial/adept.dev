@@ -21,8 +21,6 @@ interface ProjectsSectionProps {
 }
 
 const ProjectsSection: React.FC<ProjectsSectionProps> = ({ repos, loading, error }) => {
-
-   // console.log('ProjectsSection - Repositories:', repos); // Debugging line
     return (
         <div className="w-full bg-gray-800 rounded-lg p-6 shadow-md">
             <details>

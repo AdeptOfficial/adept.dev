@@ -20,9 +20,6 @@ interface RepoCardProps {
 const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
   // Prioritize GitHub Pages URL (repo.pages?.url) over homepageUrl
   const githubPagesUrl = repo.pages?.url || repo.homepageUrl;
-
-  // console.log('RepoCard - Repository:', repo); // Debugging line
-
   return (
     <div
       key={`${repo.id}-${repo.name}`}
