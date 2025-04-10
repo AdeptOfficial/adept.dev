@@ -1,29 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 
-const tabs = [
+const baseTabs = [
   { label: "Home", href: "/" },
   { label: "Contact", href: "/contact" },
 ];
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const router = useRouter();
+  const { data: session, status } = useSession();
+  const isAdmin = session?.user?.role === "admin";
 
-  useEffect(() => {
-    // Check localStorage for admin flag
-    const admin = localStorage.getItem("isAdmin") === "true";
-    setIsAdmin(admin);
-  }, []);
+  // Dynamically build tab list based on role
+  const tabs = isAdmin
+    ? [...baseTabs, { label: "Admin", href: "/admin" }]
+    : baseTabs;
 
   const handleLogout = () => {
-    localStorage.removeItem("isAdmin");
-    setIsAdmin(false);
-    router.push("/");
+    signOut({ callbackUrl: "/" });
   };
 
   return (

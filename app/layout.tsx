@@ -2,6 +2,7 @@
 
 import { Inter } from "next/font/google";
 import { usePathname } from "next/navigation";
+import { SessionProvider } from "next-auth/react"; // ✅ import SessionProvider
 import { Analytics } from "@vercel/analytics/react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -9,7 +10,7 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
-const paddingPages = ["/", "/contact"]; // Add any route you want to pad (e.g., homepage)
+const paddingPages = ["/", "/contact", "/admin"];
 
 export default function RootLayout({
   children,
@@ -21,19 +22,20 @@ export default function RootLayout({
     <html lang="en" className="h-full">
       <head />
       <body className={`${inter.className} h-full antialiased`}>
-        <div className="flex flex-col min-h-screen bg-[#121212] text-white">
-          <Navbar />
+        <SessionProvider> {/* ✅ Wrap your app in SessionProvider */}
+          <div className="flex flex-col min-h-screen bg-[#121212] text-white">
+            <Navbar />
 
-          <main className="flex-grow">
-            <div className={shouldPad ? "pt-[64px] pb-6 px-4" : ""}>
-              {children}
-            </div>
-          </main>
+            <main className="flex-grow">
+              <div className={shouldPad ? "pt-[64px] pb-6 px-4" : ""}>
+                {children}
+              </div>
+            </main>
 
-          <Footer />
-        </div>
-
-        <Analytics />
+            <Footer />
+          </div>
+          <Analytics />
+        </SessionProvider>
       </body>
     </html>
   );

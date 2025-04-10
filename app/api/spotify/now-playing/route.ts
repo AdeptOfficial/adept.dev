@@ -48,7 +48,7 @@ export async function GET() {
     if (spotifyRes.status === 204 || !spotifyRes.data?.item) {
       secureLog('🎧 No songs are being played');
       // Returning a custom status code (e.g., 418 or 200 with empty JSON)
-      return new NextResponse(JSON.stringify({ message: 'No track playing' }), { status: 418 });
+      return new NextResponse(JSON.stringify({ message: 'No track playing' }), { status: 200 });
     }
 
     const nowPlaying = spotifyRes.data;
