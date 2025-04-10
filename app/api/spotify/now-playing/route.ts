@@ -3,88 +3,88 @@ import axios from 'axios';
 import NodeCache from 'node-cache';
 import { getAccessToken } from '@/lib/spotify';
 
-const cache = new NodeCache({ stdTTL: 10 }); // Cache for 10 seconds
+// Cache valid responses for 10s (can be adjusted based on use case)
+const cache = new NodeCache({ stdTTL: 10 });
 
 const secureLog = (message: string, data?: any) => {
   if (process.env.NODE_ENV === 'development') {
-    console.log(message, data);
+    console.log(message, data); // Only log sensitive data in development
   }
 };
 
 export async function GET() {
   try {
-    // 1. Return from cache if available
+    // Step 1: Check if data is cached
     const cached = cache.get('now-playing');
     if (cached) {
       secureLog('🎵 Returning cached Now Playing');
       return NextResponse.json(cached);
     }
 
-    // 2. Get server-side access token securely
+    // Step 2: Get the access token (handles token expiration and refresh)
     const access_token = await getAccessToken();
+
     if (!access_token) {
-      console.warn('⚠️ Missing or invalid Spotify token');
+      console.warn('⚠️ No access token from getAccessToken');
       return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
     }
 
-    // 3. Query Spotify for current playing track
+    // Step 3: Fetch the current playing track from Spotify
     let spotifyRes;
     try {
       spotifyRes = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
-        validateStatus: (status) => status >= 200 && status < 500, // prevent axios throwing on 204
       });
     } catch (err: any) {
       const data = err.response?.data;
       const code = err.response?.status || 500;
       console.error('❌ Spotify API fetch failed:', data || err.message);
 
+      if (code === 401) {
+        return NextResponse.json(
+          { error: 'Access token expired or unauthorized', details: data },
+          { status: 401 }
+        );
+      }
+
       return NextResponse.json(
-        {
-          error: 'Spotify API call failed',
-          details: data || err.message,
-        },
+        { error: 'Spotify API call failed', details: data || err.message },
         { status: code }
       );
     }
 
-    // 4. Nothing playing: return a valid 200 with `{ playing: false }`
+    // Step 4: If no track is playing, log the message and return 204 No Content
     if (spotifyRes.status === 204 || !spotifyRes.data || !spotifyRes.data.item) {
-      secureLog('⏸ Nothing is currently playing');
-      return NextResponse.json({ playing: false }, { status: 200 });
+      secureLog('🎧 No songs are being played');  // Log message
+      return new NextResponse(null, { status: 204 });
     }
 
-    const nowPlaying = {
-      playing: true,
-      track: {
-        name: spotifyRes.data.item.name,
-        url: spotifyRes.data.item.external_urls.spotify,
-        artists: spotifyRes.data.item.artists.map((a: any) => a.name),
-        album: spotifyRes.data.item.album.name,
-        image: spotifyRes.data.item.album.images?.[0]?.url || null,
-      },
-    };
+    const nowPlaying = spotifyRes.data;
 
-    // 5. Cache structured nowPlaying object
+    // Step 5: Cache the valid track data
     cache.set('now-playing', nowPlaying);
 
-    // 6. Safe logging
-    secureLog('🎧 Now playing:', nowPlaying.track);
+    // Step 6: Log track info in development (no sensitive data in production)
+    secureLog('🎧 Now playing:', {
+      track: nowPlaying.item?.name,
+      artist: nowPlaying.item?.artists?.map((a: any) => a.name).join(', '),
+    });
 
+    // Step 7: Return the same raw response format
     return NextResponse.json(nowPlaying);
   } catch (error: any) {
-    const message =
+    const errMsg =
       process.env.NODE_ENV === 'production'
         ? 'Unexpected failure while fetching now playing'
         : error.message;
+    console.error('🎧 Now Playing general error:', errMsg);
 
-    console.error('🎧 Now Playing general error:', message);
     return NextResponse.json(
       {
         error: 'Unexpected failure while fetching now playing',
-        details: message,
+        details: errMsg,
       },
       { status: 500 }
     );
