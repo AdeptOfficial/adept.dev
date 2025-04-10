@@ -47,10 +47,13 @@ export default function NowPlaying() {
 
       if (res.status === 200) {
         const data = await res.json()
+
+        // Always update the track and progress
         setTrack(data)
         setHasError(false)
 
         if (data.item) {
+          // Recalculate startTime based on the latest progress_ms
           setStartTime(Date.now() - data.progress_ms)
         }
       }

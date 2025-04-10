@@ -4,25 +4,30 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
-  // Retrieve the token from the request
-  const token = await getToken({ req });
-
-  // Debugging logs (optional)
   console.log("Middleware running for:", req.nextUrl.pathname);
-  console.log("Token:", token);
 
-  // If no token is found, redirect to the login page
-  if (!token) {
-    return NextResponse.redirect(new URL("/", req.url));
+  try {
+    const token = await getToken({ req });
+
+    if (!token) {
+      console.log("No token found. Redirecting to /unauthorized.");
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    // Log only non-sensitive information
+    console.log("User role:", token.role);
+
+    if (token.role !== "admin") {
+      console.log("User is not an admin. Redirecting to /unauthorized.");
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    console.log("User is authenticated and an admin. Proceeding with the request.");
+    return NextResponse.next();
+  } catch (error) {
+    console.error("Error in middleware:", error);
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
-
-  // If the user is not an admin, redirect to the unauthorized page
-  if (token.role !== "admin") {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
-
-  // Allow the request to proceed
-  return NextResponse.next();
 }
 
 // Protect all routes under /admin/*
