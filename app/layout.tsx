@@ -18,11 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <style>{`
-          body {
-            font-family: ${inter.style.fontFamily};
-          }
-        `}</style>
+        {/* No need for inline style tag, since Tailwind handles the font globally */}
       </head>
       <body
         className={`${inter.className} bg-[#121212] text-white min-h-screen antialiased`}

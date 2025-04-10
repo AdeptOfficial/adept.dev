@@ -31,6 +31,7 @@ export default function NowPlaying() {
 
   const fetchTrack = useCallback(async () => {
     try {
+      console.log('Fetching track...')
       const res = await fetch('/api/spotify/now-playing')
 
       if (res.status === 204) {
@@ -126,7 +127,9 @@ export default function NowPlaying() {
   return (
     <AnimatePresence mode="wait">
       {hasError ? (
-        <div className="text-white">Error loading track</div>
+        <div className="text-white">
+          Error loading track. Please check your Spotify connection.
+        </div>
       ) : !track || !track.item ? (
         !hideIdle && <TrackIdle />
       ) : !track.is_playing ? (

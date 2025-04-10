@@ -62,7 +62,7 @@ export async function GET() {
     // Step 5: If no track is playing, log the message and return 204 No Content
     if (spotifyRes.status === 204 || !spotifyRes.data?.item) {
       secureLog('🎧 No songs are being played');  // Log message
-      return new NextResponse(null, { status: 204 });  // No content
+      return NextResponse.json({}, { status: 204 });  // Correct way to return 204 No Content without a body
     }
 
     const nowPlaying = spotifyRes.data;

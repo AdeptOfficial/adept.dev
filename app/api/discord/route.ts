@@ -25,7 +25,6 @@ async function isRateLimited(ip: string): Promise<boolean> {
 }
 
 export async function GET(request: Request) {
-  console.log('Fetching Discord avatar...');
   const ip = getClientIp(request);
 
   if (await isRateLimited(ip)) {
