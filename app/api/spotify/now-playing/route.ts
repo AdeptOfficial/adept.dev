@@ -74,6 +74,7 @@ export async function GET() {
     });
 
     // Step 7: Return the same raw response format
+    console.log('🎧 Now Playing response:', nowPlaying);  // Log the response for debugging
     return NextResponse.json(nowPlaying);  // Return the actual data
 
   } catch (error: any) {
