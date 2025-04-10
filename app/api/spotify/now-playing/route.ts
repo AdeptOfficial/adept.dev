@@ -14,14 +14,17 @@ const secureLog = (message: string, data?: any) => {
 
 export async function GET() {
   try {
-    // Step 1: Check if data is cached
+    // Step 1: Clear any old cache data before fetching new data
+    cache.del('now-playing');  // Ensure cache is cleaned before fetching new data
+    
+    // Step 2: Check if data is cached (after cleanup)
     const cached = cache.get('now-playing');
     if (cached) {
       secureLog('🎵 Returning cached Now Playing');
       return NextResponse.json(cached);  // Returning the cached data
     }
 
-    // Step 2: Get the access token (handles token expiration and refresh)
+    // Step 3: Get the access token (handles token expiration and refresh)
     const access_token = await getAccessToken();
 
     if (!access_token) {
@@ -29,7 +32,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
     }
 
-    // Step 3: Fetch the current playing track from Spotify
+    // Step 4: Fetch the current playing track from Spotify
     let spotifyRes;
     try {
       spotifyRes = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
@@ -56,7 +59,7 @@ export async function GET() {
       );
     }
 
-    // Step 4: If no track is playing, log the message and return 204 No Content
+    // Step 5: If no track is playing, log the message and return 204 No Content
     if (spotifyRes.status === 204 || !spotifyRes.data?.item) {
       secureLog('🎧 No songs are being played');  // Log message
       return new NextResponse(null, { status: 204 });  // No content
@@ -64,16 +67,16 @@ export async function GET() {
 
     const nowPlaying = spotifyRes.data;
 
-    // Step 5: Cache the valid track data
-    cache.set('now-playing', nowPlaying);
+    // Step 6: Cache the valid track data
+    cache.set('now-playing', nowPlaying);  // Cache new track data
 
-    // Step 6: Log track info in development (no sensitive data in production)
+    // Step 7: Log track info in development (no sensitive data in production)
     secureLog('🎧 Now playing:', {
       track: nowPlaying.item?.name,
       artist: nowPlaying.item?.artists?.map((a: any) => a.name).join(', '),
     });
 
-    // Step 7: Return the same raw response format
+    // Step 8: Return the same raw response format
     console.log('🎧 Now Playing response:', nowPlaying);  // Log the response for debugging
     return NextResponse.json(nowPlaying);  // Return the actual data
 

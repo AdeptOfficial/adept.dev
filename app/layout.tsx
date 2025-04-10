@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
+import Navbar from "./components/Navbar"; // Import Navbar
 import "./globals.css";
 
-import Navbar from "./components/Navbar"; // Import Navbar
-
+// Load Inter font
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -14,11 +14,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <style>{`
+          body {
+            font-family: ${inter.style.fontFamily};
+          }
+        `}</style>
+      </head>
       <body
         className={`${inter.className} bg-[#121212] text-white min-h-screen antialiased`}
       >
