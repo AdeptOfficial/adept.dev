@@ -1,8 +1,7 @@
-// app/contact/page.tsx
 export default function Contact() {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#121212] px-4">
-        <div className="w-full max-w-md space-y-6">
+      <div className="flex-grow flex items-center justify-center px-4 bg-[#121212]">
+        <div className="w-full max-w-md space-y-6 py-12">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">Contact Me</h1>
             <p className="text-[#ADB7BE]">
