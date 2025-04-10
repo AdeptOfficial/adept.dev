@@ -18,7 +18,7 @@ export async function GET() {
     const cached = cache.get('now-playing');
     if (cached) {
       secureLog('🎵 Returning cached Now Playing');
-      return NextResponse.json(cached);
+      return NextResponse.json(cached);  // Returning the cached data
     }
 
     // Step 2: Get the access token (handles token expiration and refresh)
@@ -42,6 +42,7 @@ export async function GET() {
       const code = err.response?.status || 500;
       console.error('❌ Spotify API fetch failed:', data || err.message);
 
+      // Handle 401 Unauthorized (e.g., expired token)
       if (code === 401) {
         return NextResponse.json(
           { error: 'Access token expired or unauthorized', details: data },
@@ -56,9 +57,9 @@ export async function GET() {
     }
 
     // Step 4: If no track is playing, log the message and return 204 No Content
-    if (spotifyRes.status === 204 || !spotifyRes.data || !spotifyRes.data.item) {
+    if (spotifyRes.status === 204 || !spotifyRes.data?.item) {
       secureLog('🎧 No songs are being played');  // Log message
-      return new NextResponse(null, { status: 204 });
+      return new NextResponse(null, { status: 204 });  // No content
     }
 
     const nowPlaying = spotifyRes.data;
@@ -73,7 +74,8 @@ export async function GET() {
     });
 
     // Step 7: Return the same raw response format
-    return NextResponse.json(nowPlaying);
+    return NextResponse.json(nowPlaying);  // Return the actual data
+
   } catch (error: any) {
     const errMsg =
       process.env.NODE_ENV === 'production'

@@ -123,7 +123,9 @@ export default function NowPlaying() {
 
   return (
     <AnimatePresence mode="wait">
-      {hasError ? null : !track || !track.item ? (
+      {hasError ? (
+        <div className="text-white">Error loading track</div>
+      ) : !track || !track.item ? (
         !hideIdle && <TrackIdle />
       ) : !track.is_playing ? (
         <TrackPaused track={{ ...track, item: track.item }} />
