@@ -30,7 +30,7 @@ const Portfolio: React.FC = () => {
     useEffect(() => {
         const fetchRepos = async () => {
             try {
-                const response = await fetch('/api/github/githubAPIcall');
+                const response = await fetch('/api/github');
                 if (!response.ok) {
                     throw new Error(`Failed to fetch repositories: ${response.status}`);
                 }

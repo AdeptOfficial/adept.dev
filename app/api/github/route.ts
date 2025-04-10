@@ -1,4 +1,6 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+// app/api/github/route.ts
+
+import { NextResponse } from 'next/server';
 import githubCache from '@/lib/cache/githubCache';
 import { redis } from '@/lib/redis';
 
@@ -6,41 +8,41 @@ const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
 const GITHUB_GRAPHQL_TOKEN = process.env.GITHUB_AUTH_TOKEN;
 
 const RATE_LIMIT_KEY = 'github_rate_limit';
-const RATE_LIMIT_WINDOW = 60; // seconds
-const RATE_LIMIT_MAX = 5; // Max requests per window (adjustable)
+const RATE_LIMIT_WINDOW = 60;
+const RATE_LIMIT_MAX = 5;
 
 // Function to check if the rate limit is exceeded
-async function isRateLimited(req: NextApiRequest): Promise<boolean> {
-  // Skip rate limiting in development mode
+async function isRateLimited(ip: string): Promise<boolean> {
   if (process.env.NODE_ENV === 'development') {
     console.log('Rate limit check skipped in development');
     return false;
   }
 
-  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const key = `${RATE_LIMIT_KEY}:${clientIp}`;
-
-  // Get current request count from Redis
+  const key = `${RATE_LIMIT_KEY}:${ip}`;
   const currentCount = await redis.get(key);
-  console.log(`Current request count for IP ${clientIp}:`, currentCount); // Log for debugging
 
   if (currentCount && parseInt(currentCount.toString()) >= RATE_LIMIT_MAX) {
-    console.log(`Rate limit exceeded for IP: ${clientIp}`);
-    return true; // Exceeded rate limit
+    console.log(`Rate limit exceeded for IP: ${ip}`);
+    return true;
   }
 
-  // Increment the request count and set expiration for rate-limiting
   await redis.incr(key);
-  await redis.expire(key, RATE_LIMIT_WINDOW); // Expire after 60 seconds
-
-  return false; // Rate limit not exceeded
+  await redis.expire(key, RATE_LIMIT_WINDOW);
+  return false;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+// IP extraction for App Router
+function getClientIp(request: Request): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  return forwardedFor?.split(',')[0] ?? 'unknown';
+}
+
+export async function GET(request: Request) {
   if (!GITHUB_GRAPHQL_TOKEN) {
-    return res.status(500).json({ error: 'GitHub GraphQL token is not set' });
+    return NextResponse.json({ error: 'GitHub GraphQL token is not set' }, { status: 500 });
   }
 
+  const ip = getClientIp(request);
   const graphqlQuery = `
     query {
       user(login: "adeptofficial") {
@@ -66,23 +68,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   `;
 
   try {
-    // Rate limit check
-    if (await isRateLimited(req)) {
-      // If rate limit exceeded, check if data is available in cache
+    if (await isRateLimited(ip)) {
       const cachedData = await redis.get('repositories');
       if (cachedData) {
-        console.log('Returning cached data due to rate limit');
-        return res.status(200).json(JSON.parse(cachedData as string)); // Return cached data
-      } else {
-        return res.status(429).json({ error: 'Too many requests. Please try again later.' }); // Return rate limit error
+        return NextResponse.json(JSON.parse(cachedData as string));
       }
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }
 
-    // Clear the existing cache before making a fresh request to GitHub API
     githubCache.delete('repositories');
-    await redis.del('repositories'); // Clear the repository cache in Redis
+    await redis.del('repositories');
 
-    // Fetch from GitHub GraphQL API
     const graphqlResponse = await fetch(GITHUB_GRAPHQL_URL, {
       method: 'POST',
       headers: {
@@ -95,17 +91,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data, errors } = await graphqlResponse.json();
 
     if (errors || !data?.user) {
-      console.error('GraphQL Errors:', errors || data);
-      return res.status(500).json({ error: 'GraphQL query failed' });
+      return NextResponse.json({ error: 'GraphQL query failed' }, { status: 500 });
     }
 
     const repositories = data.user.repositories.nodes;
 
-    // Cache the fetched data in memory and Redis with expiration time (1 hour)
-    githubCache.set('repositories', repositories); // Cache for 1 hour
+    githubCache.set('repositories', repositories);
     await redis.set('repositories', JSON.stringify(repositories), { ex: 3600 });
 
-    // Filter sensitive data before returning to client
     const filteredRepos = repositories.map((repo: any) => ({
       id: repo.id,
       name: repo.name,
@@ -116,7 +109,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       languages: repo.languages,
     }));
 
-    // Fetch GitHub Pages info using the REST API
     const withPages = await Promise.all(
       filteredRepos.map(async (repo: any) => {
         const pagesResponse = await fetch(
@@ -131,32 +123,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         let pageUrl = null;
         let pagesStatus = null;
-        
+
         if (pagesResponse.status === 200) {
           const pagesData = await pagesResponse.json();
           pageUrl = pagesData.html_url || `https://adeptofficial.github.io/${repo.name}/`;
-          pagesStatus = 'BUILT'; // GitHub Pages is built
-        } else if (repo.homepageUrl && repo.homepageUrl !== "") {
+          pagesStatus = 'BUILT';
+        } else if (repo.homepageUrl && repo.homepageUrl !== '') {
           pageUrl = repo.homepageUrl;
-          pagesStatus = 'CUSTOM'; // Custom homepage URL
+          pagesStatus = 'CUSTOM';
         }
 
-        // Update the repository with pages data
         const updatedRepo = {
           ...repo,
           homepageUrl: pageUrl,
           pages: pageUrl ? { status: pagesStatus, url: pageUrl } : null,
         };
 
-        // Cache the repository with pages info (in both local and redis caches)
-        githubCache.set(`repo-${repo.id}`, updatedRepo); // Cache individual repo
+        githubCache.set(`repo-${repo.id}`, updatedRepo);
         await redis.set(`repo-${repo.id}`, JSON.stringify(updatedRepo), { ex: 3600 });
 
         return updatedRepo;
       })
     );
 
-    return res.status(200).json(withPages);
+    return NextResponse.json(withPages);
   } catch (error: unknown) {
     const errorMessage =
       process.env.NODE_ENV === 'production'
@@ -164,9 +154,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : error instanceof Error
         ? error.message
         : 'Unknown error';
+
     console.error('Error fetching GitHub repositories:', errorMessage);
 
-    // In production, hide sensitive error information
-    return res.status(500).json({ error: errorMessage });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

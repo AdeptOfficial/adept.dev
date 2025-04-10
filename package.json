@@ -21,6 +21,7 @@
     "inflight": "^1.0.6",
     "lru-cache": "^11.1.0",
     "next": "^14.2.25",
+    "next-auth": "^4.24.11",
     "node-cache": "^5.1.2",
     "react": "^18",
     "react-dom": "^18",

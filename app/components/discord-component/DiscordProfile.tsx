@@ -10,7 +10,7 @@ const DiscordProfile: React.FC = () => {
   useEffect(() => {
     const getProfilePic = async () => {
       try {
-        const res = await fetch('/api/discord/discordProfilePicture');
+        const res = await fetch('/api/discord');
         if (!res.ok) {
           throw new Error('Failed to fetch profile picture');
         }

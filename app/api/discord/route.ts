@@ -1,4 +1,6 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+// app/api/discord/route.ts
+
+import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
 import profilePicCache from '@/lib/cache/profilePicCache';
 
@@ -8,12 +10,9 @@ const isDev = process.env.NODE_ENV !== 'production';
 const RATE_LIMIT_MAX = isDev ? 50 : 5;
 const RATE_LIMIT_WINDOW = 60; // seconds
 
-function getClientIp(req: NextApiRequest): string {
-  return (
-    (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
-    req.socket.remoteAddress ||
-    'unknown'
-  );
+function getClientIp(request: Request): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  return forwardedFor?.split(',')[0] ?? 'unknown';
 }
 
 async function isRateLimited(ip: string): Promise<boolean> {
@@ -25,16 +24,15 @@ async function isRateLimited(ip: string): Promise<boolean> {
   return count > RATE_LIMIT_MAX;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+export async function GET(request: Request) {
+  console.log('Fetching Discord avatar...');
+  const ip = getClientIp(request);
 
-  const ip = getClientIp(req);
-
-  // Rate limit check
   if (await isRateLimited(ip)) {
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    );
   }
 
   const userId = DISCORD_USER_ID;
@@ -45,16 +43,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check local cache first
     const localCache = profilePicCache.get(userId);
     if (localCache) {
-      return res.status(200).json({ profilePicUrl: localCache });
+      return NextResponse.json({ profilePicUrl: localCache });
     }
 
-    // Check Redis cache for avatar URL
+    // Check Redis cache
     const cached = await redis.get<string>(cacheKey);
     if (cached) {
-      return res.status(200).json({ profilePicUrl: cached });
+      return NextResponse.json({ profilePicUrl: cached });
     }
 
-    // Check Redis cache for avatar hash
     const cachedHash = await redis.get<string>(hashKey);
 
     // Fetch from Discord API
@@ -72,19 +69,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const newHash = data.avatar;
     const profilePicUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}?size=2048`;
 
-    // If the avatar hash has changed, update the cache
     if (cachedHash !== newHash) {
       await redis.set(cacheKey, profilePicUrl, { ex: 3600 });
       await redis.set(hashKey, newHash, { ex: 3600 });
-      profilePicCache.set(userId, profilePicUrl); // Cache in local cache
+      profilePicCache.set(userId, profilePicUrl); // Update local cache
     }
 
-    return res.status(200).json({ profilePicUrl });
+    return NextResponse.json({ profilePicUrl });
   } catch (error: unknown) {
     console.error('Error fetching Discord avatar:', error);
-    return res.status(500).json({
-      error: 'Failed to fetch Discord avatar',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch Discord avatar',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
