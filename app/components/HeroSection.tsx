@@ -10,7 +10,7 @@ const HeroSection = () => {
         <div className="col-span-1 lg:col-span-7 flex flex-col justify-center">
           <h1 className="text-white mb-4 text-5xl sm:text-6xl lg:text-8xl font-extrabold leading-tight">
             Certified Vibe Coder
-          </h1>a
+          </h1>
           <p className="text-[#ADB7BE] text-xl sm:text-2xl lg:text-4xl">
             Design. Code. Ship. Repeat.
           </p>
