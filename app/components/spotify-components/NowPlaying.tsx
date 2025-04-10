@@ -26,16 +26,13 @@ export default function NowPlaying() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const [hideIdle, setHideIdle] = useState(false)
   const [hasError, setHasError] = useState(false)
-  const pausedSince = useRef<number | null>(null)
-  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchTrack = useCallback(async () => {
     try {
-      console.log('Fetching track...')
       const res = await fetch('/api/spotify/now-playing')
 
-      if (res.status === 204) {
-        // No track playing
+      if (res.status === 418) {
+        // Handle the custom status code (418)
         setTrack(null)
         setHasError(false)
         return
@@ -56,28 +53,6 @@ export default function NowPlaying() {
         if (data.item) {
           setStartTime(Date.now() - data.progress_ms)
         }
-
-        // Handle paused track logic
-        if (data.is_playing === false) {
-          if (pausedSince.current === null) {
-            pausedSince.current = Date.now()
-          }
-
-          if (!pauseTimeoutRef.current) {
-            pauseTimeoutRef.current = setTimeout(() => {
-              setTrack(null)
-              pausedSince.current = null
-              pauseTimeoutRef.current = null
-            }, 30_000) // 30 seconds
-          }
-        } else {
-          // Clear pause logic if resumed
-          pausedSince.current = null
-          if (pauseTimeoutRef.current) {
-            clearTimeout(pauseTimeoutRef.current)
-            pauseTimeoutRef.current = null
-          }
-        }
       }
     } catch (err) {
       console.error('Failed to fetch track', err)
@@ -92,7 +67,6 @@ export default function NowPlaying() {
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
-      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
     }
   }, [fetchTrack])
 
