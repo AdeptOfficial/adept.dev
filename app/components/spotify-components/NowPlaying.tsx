@@ -34,12 +34,14 @@ export default function NowPlaying() {
       const res = await fetch('/api/spotify/now-playing')
 
       if (res.status === 204) {
+        // No track playing
         setTrack(null)
         setHasError(false)
         return
       }
 
       if (res.status === 500 || res.status === 401) {
+        // Error with the API
         setTrack(null)
         setHasError(true)
         return
@@ -85,7 +87,7 @@ export default function NowPlaying() {
 
   useEffect(() => {
     fetchTrack()
-    intervalRef.current = setInterval(fetchTrack, 7000)
+    intervalRef.current = setInterval(fetchTrack, 7000) // Update every 7 seconds
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -114,7 +116,7 @@ export default function NowPlaying() {
   useEffect(() => {
     if (!track || !track.item) {
       setHideIdle(false)
-      const timeout = setTimeout(() => setHideIdle(true), 3000)
+      const timeout = setTimeout(() => setHideIdle(true), 3000) // Hide after 3 seconds of inactivity
       return () => clearTimeout(timeout)
     } else {
       setHideIdle(false)
