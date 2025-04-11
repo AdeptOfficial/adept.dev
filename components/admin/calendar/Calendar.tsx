@@ -126,7 +126,7 @@ export default function AdminCalendarPage() {
 
   return (
     <div className="min-h-screen bg-[#121212] text-white p-4 sm:p-6">
-      <h1 className="text-3xl font-bold mb-6">📅 MyCalendar</h1>
+      <h1 className="text-3xl font-bold mb-6">📅 My   Calendar</h1>
 
       <div className="flex flex-wrap gap-3 mb-4">
         <button
