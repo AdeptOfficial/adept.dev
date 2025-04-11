@@ -17,6 +17,7 @@ export type TrackData = {
     album: { images: { url: string }[] }
     external_urls: { spotify: string }
   } | null
+  timestamp?: number
 }
 
 export default function NowPlaying() {
@@ -25,48 +26,77 @@ export default function NowPlaying() {
   const [liveProgress, setLiveProgress] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const [hideIdle, setHideIdle] = useState(false)
+  const [idleDismissed, setIdleDismissed] = useState(false)
   const [hasError, setHasError] = useState(false)
 
   const fetchTrack = useCallback(async () => {
     try {
-      const res = await fetch('/api/spotify/now-playing')
+      console.log('[NowPlaying] Fetching track…')
+      const res = await fetch('/api/spotify/now-playing', {
+        cache: 'no-store',
+        next: { revalidate: 0 },
+      })
 
-      if (res.status === 418) {
-        // Handle the custom status code (418)
-        setTrack(null)
-        setHasError(false)
-        return
-      }
+      console.log('[NowPlaying] Response status:', res.status)
 
-      if (res.status === 500 || res.status === 401) {
-        // Error with the API
+      if (!res.ok) {
+        console.warn('[NowPlaying] Response not OK, setting error state.')
         setTrack(null)
         setHasError(true)
         return
       }
 
-      if (res.status === 200) {
-        const data = await res.json()
-        setTrack(data)
-        setHasError(false)
+      const data = await res.json()
+      console.log('[NowPlaying] Response data:', data)
 
-        if (data.item) {
-          setStartTime(Date.now() - data.progress_ms)
-        }
+      setTrack(data)
+      setHasError(false)
+
+      if (data.item && data.progress_ms !== undefined) {
+        setStartTime(Date.now() - data.progress_ms)
+      } else {
+        setStartTime(null)
       }
     } catch (err) {
-      console.error('Failed to fetch track', err)
+      console.error('[NowPlaying] Failed to fetch track:', err)
       setHasError(true)
       setTrack(null)
     }
   }, [])
 
   useEffect(() => {
-    fetchTrack()
-    intervalRef.current = setInterval(fetchTrack, 7000) // Update every 7 seconds
+    const startPolling = () => {
+      fetchTrack()
+      intervalRef.current = setInterval(fetchTrack, 7000)
+    }
+
+    const stopPolling = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[NowPlaying] Page visible — resuming polling')
+        startPolling()
+      } else {
+        console.log('[NowPlaying] Page hidden — pausing polling')
+        stopPolling()
+      }
+    }
+
+    // Start immediately if tab is visible
+    if (document.visibilityState === 'visible') {
+      startPolling()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [fetchTrack])
 
@@ -91,10 +121,14 @@ export default function NowPlaying() {
   useEffect(() => {
     if (!track || !track.item) {
       setHideIdle(false)
-      const timeout = setTimeout(() => setHideIdle(true), 3000) // Hide after 3 seconds of inactivity
+      const timeout = setTimeout(() => {
+        setHideIdle(true)
+        setIdleDismissed(true)
+      }, 3000)
       return () => clearTimeout(timeout)
     } else {
       setHideIdle(false)
+      setIdleDismissed(false)
     }
   }, [track])
 
@@ -104,12 +138,13 @@ export default function NowPlaying() {
         <div className="text-white">
           Error loading track. Please check your Spotify connection.
         </div>
-      ) : !track || !track.item ? (
-        !hideIdle && <TrackIdle />
-      ) : !track.is_playing ? (
-        <TrackPaused track={{ ...track, item: track.item }} />
+      ) : !track?.item && !idleDismissed ? (
+        <TrackIdle />
+      ) : !track?.item && idleDismissed ? null
+      : !track?.is_playing ? (
+        <TrackPaused track={track!} />
       ) : (
-        <TrackPlaying track={{ ...track, item: track.item }} liveProgress={liveProgress} />
+        <TrackPlaying track={track!} liveProgress={liveProgress} />
       )}
     </AnimatePresence>
   )
