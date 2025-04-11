@@ -31,18 +31,24 @@ export default function NowPlaying() {
 
   const fetchTrack = useCallback(async () => {
     try {
+      console.log('[NowPlaying] Fetching track…')
       const res = await fetch('/api/spotify/now-playing', {
-        cache: 'no-store',         // ⛔ prevent caching
-        next: { revalidate: 0 },   // optional: signal Next.js not to revalidate
-      });
+        cache: 'no-store',
+        next: { revalidate: 0 },
+      })
+
+      console.log('[NowPlaying] Response status:', res.status)
 
       if (!res.ok) {
+        console.warn('[NowPlaying] Response not OK, setting error state.')
         setTrack(null)
         setHasError(true)
         return
       }
 
       const data = await res.json()
+      console.log('[NowPlaying] Response data:', data)
+
       setTrack(data)
       setHasError(false)
 
@@ -52,7 +58,7 @@ export default function NowPlaying() {
         setStartTime(null)
       }
     } catch (err) {
-      console.error('Failed to fetch track', err)
+      console.error('[NowPlaying] Failed to fetch track:', err)
       setHasError(true)
       setTrack(null)
     }
