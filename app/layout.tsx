@@ -4,8 +4,8 @@ import { Inter } from "next/font/google";
 import { usePathname } from "next/navigation";
 import { SessionProvider } from "next-auth/react"; // ✅ import SessionProvider
 import { Analytics } from "@vercel/analytics/react";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });

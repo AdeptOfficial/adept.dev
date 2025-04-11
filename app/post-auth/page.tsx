@@ -9,26 +9,15 @@ export default function PostAuthPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (session?.user?.role === 'admin') {
-      router.replace('/admin');
-    } else {
-      router.replace('/');
+    if (status !== 'loading') {
+      const destination = session?.user?.role === 'admin' ? '/admin' : '/';
+      router.replace(destination);
     }
   }, [session, status, router]);
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white bg-[#121212]">
-        <p className="text-lg font-medium">Authenticating...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center text-white bg-[#121212]">
-      <p className="text-lg font-medium">Redirecting...</p>
+      <p className="text-lg font-medium">Authenticating...</p>
     </div>
   );
 }
