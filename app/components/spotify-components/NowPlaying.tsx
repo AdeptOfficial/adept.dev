@@ -65,11 +65,38 @@ export default function NowPlaying() {
   }, [])
 
   useEffect(() => {
-    fetchTrack()
-    intervalRef.current = setInterval(fetchTrack, 7000)
+    const startPolling = () => {
+      fetchTrack()
+      intervalRef.current = setInterval(fetchTrack, 7000)
+    }
+
+    const stopPolling = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[NowPlaying] Page visible — resuming polling')
+        startPolling()
+      } else {
+        console.log('[NowPlaying] Page hidden — pausing polling')
+        stopPolling()
+      }
+    }
+
+    // Start immediately if tab is visible
+    if (document.visibilityState === 'visible') {
+      startPolling()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [fetchTrack])
 
