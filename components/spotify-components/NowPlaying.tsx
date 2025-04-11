@@ -31,13 +31,10 @@ export default function NowPlaying() {
 
   const fetchTrack = useCallback(async () => {
     try {
-      console.log('[NowPlaying] Fetching track…')
       const res = await fetch('/api/spotify/now-playing', {
         cache: 'no-store',
         next: { revalidate: 0 },
       })
-
-      console.log('[NowPlaying] Response status:', res.status)
 
       if (!res.ok) {
         console.warn('[NowPlaying] Response not OK, setting error state.')
@@ -79,10 +76,8 @@ export default function NowPlaying() {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[NowPlaying] Page visible — resuming polling')
         startPolling()
       } else {
-        console.log('[NowPlaying] Page hidden — pausing polling')
         stopPolling()
       }
     }
