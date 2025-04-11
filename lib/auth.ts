@@ -1,9 +1,10 @@
-import { NextAuthOptions } from 'next-auth';
+// lib/auth.ts
+import type { NextAuthOptions } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase server client
-const supabase = createClient(
+// Server-only Supabase client
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -20,11 +21,15 @@ export const authOptions: NextAuthOptions = {
       const email = user?.email;
       if (!email) return false;
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('admins')
         .select('email')
         .eq('email', email.toLowerCase())
         .single();
+
+      if (error) {
+        console.error('[Auth] Supabase error on signIn:', error.message);
+      }
 
       return !!data;
     },
@@ -33,13 +38,17 @@ export const authOptions: NextAuthOptions = {
       if (user?.email) {
         token.email = user.email.toLowerCase();
 
-        const { data } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('admins')
           .select('email')
           .eq('email', token.email)
           .single();
 
         token.role = data ? 'admin' : 'user';
+
+        if (error) {
+          console.error('[Auth] Supabase error in jwt callback:', error.message);
+        }
       }
 
       return token;
