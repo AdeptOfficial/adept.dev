@@ -17,6 +17,7 @@ export type TrackData = {
     album: { images: { url: string }[] }
     external_urls: { spotify: string }
   } | null
+  timestamp?: number
 }
 
 export default function NowPlaying() {
@@ -25,37 +26,30 @@ export default function NowPlaying() {
   const [liveProgress, setLiveProgress] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const [hideIdle, setHideIdle] = useState(false)
+  const [idleDismissed, setIdleDismissed] = useState(false)
   const [hasError, setHasError] = useState(false)
 
   const fetchTrack = useCallback(async () => {
     try {
-      const res = await fetch('/api/spotify/now-playing')
+      const res = await fetch('/api/spotify/now-playing', {
+        cache: 'no-store',         // ⛔ prevent caching
+        next: { revalidate: 0 },   // optional: signal Next.js not to revalidate
+      });
 
-      if (res.status === 418) {
-        // Handle the custom status code (418)
-        setTrack(null)
-        setHasError(false)
-        return
-      }
-
-      if (res.status === 500 || res.status === 401) {
-        // Error with the API
+      if (!res.ok) {
         setTrack(null)
         setHasError(true)
         return
       }
 
-      if (res.status === 200) {
-        const data = await res.json()
+      const data = await res.json()
+      setTrack(data)
+      setHasError(false)
 
-        // Always update the track and progress
-        setTrack(data)
-        setHasError(false)
-
-        if (data.item) {
-          // Recalculate startTime based on the latest progress_ms
-          setStartTime(Date.now() - data.progress_ms)
-        }
+      if (data.item && data.progress_ms !== undefined) {
+        setStartTime(Date.now() - data.progress_ms)
+      } else {
+        setStartTime(null)
       }
     } catch (err) {
       console.error('Failed to fetch track', err)
@@ -66,7 +60,7 @@ export default function NowPlaying() {
 
   useEffect(() => {
     fetchTrack()
-    intervalRef.current = setInterval(fetchTrack, 7000) // Update every 7 seconds
+    intervalRef.current = setInterval(fetchTrack, 7000)
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -94,10 +88,14 @@ export default function NowPlaying() {
   useEffect(() => {
     if (!track || !track.item) {
       setHideIdle(false)
-      const timeout = setTimeout(() => setHideIdle(true), 3000) // Hide after 3 seconds of inactivity
+      const timeout = setTimeout(() => {
+        setHideIdle(true)
+        setIdleDismissed(true)
+      }, 3000)
       return () => clearTimeout(timeout)
     } else {
       setHideIdle(false)
+      setIdleDismissed(false)
     }
   }, [track])
 
@@ -107,12 +105,13 @@ export default function NowPlaying() {
         <div className="text-white">
           Error loading track. Please check your Spotify connection.
         </div>
-      ) : !track || !track.item ? (
-        !hideIdle && <TrackIdle />
-      ) : !track.is_playing ? (
-        <TrackPaused track={{ ...track, item: track.item }} />
+      ) : !track?.item && !idleDismissed ? (
+        <TrackIdle />
+      ) : !track?.item && idleDismissed ? null
+      : !track?.is_playing ? (
+        <TrackPaused track={track!} />
       ) : (
-        <TrackPlaying track={{ ...track, item: track.item }} liveProgress={liveProgress} />
+        <TrackPlaying track={track!} liveProgress={liveProgress} />
       )}
     </AnimatePresence>
   )

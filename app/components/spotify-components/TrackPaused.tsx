@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion'
-import type { TrackData } from './NowPlaying' // update path as needed
+import type { TrackData } from './NowPlaying' // adjust path if needed
 
 type TrackPausedProps = {
-  track: NonNullable<TrackData> & { item: NonNullable<TrackData['item']> }
+  track: TrackData
 }
 
 export default function TrackPaused({ track }: TrackPausedProps) {
+  if (!track.item) return null
+
   return (
     <motion.div
       key="paused"
