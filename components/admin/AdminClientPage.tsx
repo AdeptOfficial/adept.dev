@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import TableList from './tables/TableList';
 import { fetchTables } from './tables/utils';
+import Link from 'next/link';
 
 export default function AdminClientPage() {
   const [dbTables, setDbTables] = useState<string[]>([]);
@@ -35,6 +36,13 @@ export default function AdminClientPage() {
       <section>
         <h2 className="text-2xl font-semibold mb-2">🗄️ Check Database</h2>
         <TableList tables={dbTables} loading={loading} error={error} />
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-semibold mb-2">📅 Calendar</h2>
+        <Link href="/admin/calendar" className="underline text-blue-400 hover:text-blue-300">
+          View Calendar
+        </Link>
       </section>
     </div>
   );
