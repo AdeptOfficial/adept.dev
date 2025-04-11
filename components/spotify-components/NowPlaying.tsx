@@ -44,7 +44,6 @@ export default function NowPlaying() {
       }
 
       const data = await res.json()
-      console.log('[NowPlaying] Response data:', data)
 
       setTrack(data)
       setHasError(false)
