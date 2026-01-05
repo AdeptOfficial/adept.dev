@@ -12,7 +12,6 @@
     "@eslint/config-array": "^0.20.0",
     "@eslint/object-schema": "^2.1.6",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@upstash/redis": "^1.36.0",
     "@vercel/analytics": "^1.5.0",
     "@vercel/kv": "^3.0.0",
     "adept.dev": "file:",
